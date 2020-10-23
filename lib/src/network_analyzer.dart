@@ -58,11 +58,11 @@ class NetworkAnalyzer {
   /// Pings a given [subnet] (xxx.xxx.xxx) on a given [port].
   ///
   /// Pings IP:PORT all at once
-  static Stream<NetworkAddress> discover2(
+  static Future<Stream<NetworkAddress>> discover2(
     String subnet,
     int port, {
     Duration timeout = const Duration(seconds: 5),
-  }) {
+  }) async {
     if (port < 1 || port > 65535) {
       throw 'Incorrect port';
     }
@@ -75,6 +75,7 @@ class NetworkAnalyzer {
       final Future<Socket> f = _ping(host, port, timeout);
       futures.add(f);
       f.then((socket) {
+        print("adding socket $host");
         socket.destroy();
         out.sink.add(NetworkAddress(host, true));
       }).catchError((dynamic e) {
@@ -87,9 +88,18 @@ class NetworkAnalyzer {
           out.sink.add(NetworkAddress(host, false));
         } else {
           // Error 23,24: Too many open files in system
+
           throw e;
         }
       });
+
+      if (i % 10 == 0) {
+        print("wait la");
+        await Future.wait<Socket>(futures).catchError((dynamic e) {
+          print('yeha error $e');
+        });
+        futures.clear();
+      }
     }
 
     Future.wait<Socket>(futures)

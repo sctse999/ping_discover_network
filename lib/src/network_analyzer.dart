@@ -62,6 +62,7 @@ class NetworkAnalyzer {
     String subnet,
     int port, {
     Duration timeout = const Duration(seconds: 5),
+    int batchSize = 50,
   }) async {
     if (port < 1 || port > 65535) {
       throw 'Incorrect port';
@@ -88,15 +89,14 @@ class NetworkAnalyzer {
           out.sink.add(NetworkAddress(host, false));
         } else {
           // Error 23,24: Too many open files in system
-
           throw e;
         }
       });
 
-      if (i % 10 == 0) {
-        print("wait la");
+      if (i % batchSize == 0) {
+        print("checkpoint $host");
         await Future.wait<Socket>(futures).catchError((dynamic e) {
-          print('yeha error $e');
+          print(e);
         });
         futures.clear();
       }
